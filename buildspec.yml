@@ -1,0 +1,36 @@
+version: 0.2
+
+env:
+  parameter-store:
+    IOT_ENDPOINT: /gg-cicd-test/IOT_ENDPOINT
+
+phases:
+  install:
+    commands:
+      - pip install -q --upgrade pip
+      - pip install -q aws-sam-cli
+      -
+      - cd test
+      - pip install -q -r requirements.txt
+      - cd ..
+  build:
+    commands:
+      - echo "deploying to test core"
+      - cd src
+      - ./deploy.sh test
+      - cd ..
+      -
+      - echo "deployment stabilizing..."
+      - sleep 30
+      -
+      - echo "running integration tests"
+      - cd test
+      - aws ssm get-parameter --name /gg-cicd-test/integration-testing-client.cert.pem --with-decryption --output text --query Parameter.Value > certs/integration-testing-client.cert.pem
+      - aws ssm get-parameter --name /gg-cicd-test/integration-testing-client.private.key --with-decryption --output text --query Parameter.Value > certs/integration-testing-client.private.key
+      - python -m unittest integration_tests.py
+      - cd ..
+      -
+      - echo "deploying to production core"
+      - cd src
+      - ./deploy.sh prod
+      - cd ..

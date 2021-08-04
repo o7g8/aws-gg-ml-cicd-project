@@ -1,0 +1,13 @@
+.idea/
+*.iml
+.python-version
+.aws-sam/
+packaged.yml
+test/certs/integration-testing-client.*
+*.zip
+__pycache__/
+*.pyc
+*.pyo
+DOC/env_setup.sh
+~*
+

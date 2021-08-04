@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Our Application
+
+Parameters:
+  CoreName:
+    Description: Greengrass Core on which our resources will be deployed
+    Default: "coreName"
+    Type: String
+
+Resources:
+  GreengrassGroupVersion:
+    Type: AWS::Greengrass::GroupVersion
+    Properties:
+      GroupId: {'Fn::ImportValue': !Sub '${CoreName}-environment-GreengrassGroupId'}
+      CoreDefinitionVersionArn: !Ref GreengrassCoreDefinitionVersion
+      FunctionDefinitionVersionArn: !GetAtt FunctionDefinition.LatestVersionArn
+      SubscriptionDefinitionVersionArn: !GetAtt SubscriptionDefinition.LatestVersionArn
+      # Other Greengrass resources that can be included in a group
+      # not used in this example
+      #
+      # DeviceDefinitionVersionArn: !Ref ExampleDeviceDefinitionVersion
+      # LoggerDefinitionVersionArn: !Ref ExampleLoggerDefinitionVersion
+      # ResourceDefinitionVersionArn: !Ref ExampleResourceDefinitionVersion
+      # ConnectorDefinitionVersionArn: !Ref ExampleConnectorDefinitionVersion
+
+  GreengrassCoreDefinition:
+    Type: AWS::Greengrass::CoreDefinition
+    Properties:
+      # use CoreName + "_Core" as "thingName"
+      Name: !Join ["_", [!Ref CoreName, "Core"] ]
+
+  GreengrassCoreDefinitionVersion:
+    # Example of using GreengrassCoreDefinition referring to this
+    # "Version" resource
+    Type: AWS::Greengrass::CoreDefinitionVersion
+    Properties:
+      CoreDefinitionId: !Ref GreengrassCoreDefinition
+      Cores:
+        - Id: !Join ["_", [!Ref CoreName, "Core"] ]
+          ThingArn: !Join
+            - ":"
+            - - "arn:aws:iot"
+              - !Ref AWS::Region
+              - !Ref AWS::AccountId
+              - !Join
+                - "/"
+                - - "thing"
+                  - !Join ["_", [!Ref CoreName, "Core"] ]
+          CertificateArn: !Join
+            - ":"
+            - - "arn:aws:iot"
+              - !Ref AWS::Region
+              - !Ref AWS::AccountId
+              - !Join
+                - "/"
+                - - "cert"
+                  - {'Fn::ImportValue': !Sub '${CoreName}-environment-IoTThingCertificateId'}
+          SyncShadow: "false"
+
+  FunctionDefinition:
+    Type: 'AWS::Greengrass::FunctionDefinition'
+    Properties:
+      Name: FunctionDefinition
+      InitialVersion:
+        DefaultConfig:
+          Execution:
+            IsolationMode: GreengrassContainer
+        Functions:
+          - Id: !Join ["_", [!Ref CoreName, "sample"] ]
+            FunctionArn: !Ref GGSampleFunction.Version
+            FunctionConfiguration:
+              Pinned: false
+              Executable: index.py
+              MemorySize: '65536'
+              Timeout: '300'
+              EncodingType: binary
+              Environment:
+                Variables:
+                  CORE_NAME: !Ref CoreName
+                AccessSysfs: 'false'
+                Execution:
+                  IsolationMode: GreengrassContainer
+                  RunAs:
+                    Uid: '1'
+                    Gid: '10'
+
+  GGSampleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      AutoPublishAlias: live
+      CodeUri: sample_function
+      Handler: sample_function.function_handler
+      Runtime: python2.7
+      Role: {'Fn::ImportValue': !Sub '${CoreName}-environment-LambdaExecutionArn'}
+
+  SubscriptionDefinition:
+    Type: 'AWS::Greengrass::SubscriptionDefinition'
+    Properties:
+      Name: SubscriptionDefinition
+      InitialVersion:
+        # Example of one-to-many subscriptions in single definition version
+        Subscriptions:
+          - Id: Subscription1
+            Source: 'cloud'
+            Subject: !Join
+              - "/"
+              - - !Ref CoreName
+                - "in"
+            Target: !Ref GGSampleFunction.Version
+          - Id: Subscription2
+            Source: !Ref GGSampleFunction.Version
+            Subject: !Join
+              - "/"
+              - - !Ref CoreName
+                - "out"
+            Target: 'cloud'
+
+Outputs:
+  GroupId:
+    Value: {'Fn::ImportValue': !Sub '${CoreName}-environment-GreengrassGroupId'}
+
