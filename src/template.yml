@@ -91,7 +91,7 @@ Resources:
       AutoPublishAlias: live
       CodeUri: sample_function
       Handler: sample_function.function_handler
-      Runtime: python2.7
+      Runtime: python3.6
       Role: {'Fn::ImportValue': !Sub '${CoreName}-environment-LambdaExecutionArn'}
 
   SubscriptionDefinition:
