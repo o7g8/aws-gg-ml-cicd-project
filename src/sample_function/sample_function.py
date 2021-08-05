@@ -16,6 +16,7 @@ def function_handler(event, context):
     # response['processed_at'] = str(datetime.now())
     # the working version
     response['echo_processed_at'] = str(datetime.now())
+    print('!!!!!!!! hello !!!!')
 
     response_string = json.dumps(response)
 
