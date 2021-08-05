@@ -101,9 +101,9 @@ Resources:
                 AccessSysfs: 'false'
                 Execution:
                   IsolationMode: GreengrassContainer
-                  RunAs:
-                    Uid: '1'
-                    Gid: '10'
+#                  RunAs:
+#                    Uid: '1'
+#                    Gid: '10'
 
   GGSampleFunction:
     Type: AWS::Serverless::Function
