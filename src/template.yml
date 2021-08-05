@@ -16,12 +16,12 @@ Resources:
       CoreDefinitionVersionArn: !Ref GreengrassCoreDefinitionVersion
       FunctionDefinitionVersionArn: !GetAtt FunctionDefinition.LatestVersionArn
       SubscriptionDefinitionVersionArn: !GetAtt SubscriptionDefinition.LatestVersionArn
+      ResourceDefinitionVersionArn: !Ref ResourceDefinitionVersion
       # Other Greengrass resources that can be included in a group
       # not used in this example
       #
       # DeviceDefinitionVersionArn: !Ref ExampleDeviceDefinitionVersion
       # LoggerDefinitionVersionArn: !Ref ExampleLoggerDefinitionVersion
-      # ResourceDefinitionVersionArn: !Ref ExampleResourceDefinitionVersion
       # ConnectorDefinitionVersionArn: !Ref ExampleConnectorDefinitionVersion
 
   GreengrassCoreDefinition:
@@ -84,6 +84,26 @@ Resources:
                   RunAs:
                     Uid: '1'
                     Gid: '10'
+          - Id: !Join ["_", [!Ref CoreName, "mlinference"] ]
+            FunctionArn: !Ref MlFunction.Version
+            FunctionConfiguration:
+              Pinned: True
+              Executable: index.py
+              MemorySize: '768000'
+              Timeout: '300'
+              EncodingType: json
+              Environment:
+                ResourceAccessPolicies:
+                  - ResourceId: MlImageDirectory
+                    Permission: rw
+                  - ResourceId: MlModelImageClassification
+                    Permission: ro
+                AccessSysfs: 'false'
+                Execution:
+                  IsolationMode: GreengrassContainer
+                  RunAs:
+                    Uid: '1'
+                    Gid: '10'
 
   GGSampleFunction:
     Type: AWS::Serverless::Function
@@ -115,36 +135,10 @@ Resources:
               - - !Ref CoreName
                 - "out"
             Target: 'cloud'
-
-  MlFunctionDefinition:
-    Type: 'AWS::Greengrass::FunctionDefinition'
-    Properties:
-      Name: MlFunctionDefinition
-      InitialVersion:
-        DefaultConfig:
-          Execution:
-            IsolationMode: GreengrassContainer
-        Functions:
-          - Id: !Join ["_", [!Ref CoreName, "mlinference"] ]
-            FunctionArn: !Ref MlFunction.Version
-            FunctionConfiguration:
-              Pinned: True
-              Executable: index.py
-              MemorySize: '768000'
-              Timeout: '300'
-              EncodingType: json
-              Environment:
-                ResourceAccessPolicies:
-                  - ResourceId: MlImageDirectory
-                    Permission: rw
-                  - ResourceId: MlModelImageClassification
-                    Permission: ro
-                AccessSysfs: 'false'
-                Execution:
-                  IsolationMode: GreengrassContainer
-                  RunAs:
-                    Uid: '1'
-                    Gid: '10'
+          - Id: MlSubscription
+            Source: !Ref MlFunction.Version
+            Subject: 'greengrass/ml/inference/#'
+            Target: 'cloud'
 
   ResourceDefinition:
     Type: 'AWS::Greengrass::ResourceDefinition'
@@ -179,18 +173,6 @@ Resources:
       Handler: mlinference_function.lambda_handler
       Runtime: python3.8
       Role: {'Fn::ImportValue': !Sub '${CoreName}-environment-LambdaExecutionArn'}
-
-  MlSubscriptionDefinition:
-    Type: 'AWS::Greengrass::SubscriptionDefinition'
-    Properties:
-      Name: MlSubscriptionDefinition
-      InitialVersion:
-        # Example of one-to-many subscriptions in single definition version
-        Subscriptions:
-          - Id: Subscription2
-            Source: !Ref MlFunction.Version
-            Subject: 'greengrass/ml/inference/#'
-            Target: 'cloud'
 
 Outputs:
   GroupId:
