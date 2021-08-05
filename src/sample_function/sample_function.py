@@ -12,7 +12,8 @@ def function_handler(event, context):
 
     response = json.loads(event)
 
-    # maybe do something with the event before sending it back
+    # Add the time we processed the message to our response
+    response['processed_at'] = str(datetime.now())
 
     response_string = json.dumps(response)
 
