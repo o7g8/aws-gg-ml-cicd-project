@@ -14,7 +14,7 @@ def function_handler(event, context):
 
     # Add the time we processed the message to our response (with failure)
     # response['processed_at'] = str(datetime.now())
-    # the working one
+    # the working line
     response['echo_processed_at'] = str(datetime.now())
 
     response_string = json.dumps(response)
