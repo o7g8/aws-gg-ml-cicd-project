@@ -1,5 +1,5 @@
 #
-# lambda_function.py
+# lambda_function.py 
 #
 
 # function for Greengrass ML Inference
