@@ -3,7 +3,7 @@
 #
 
 # function for Greengrass ML Inference
-# Loads model based on cifar10 dataset
+# Loads model based on cifar10 dataset 
 #
 
 import greengrasssdk
