@@ -8,6 +8,7 @@ phases:
   install:
     commands:
       - pip install -q --upgrade pip
+      - pip install -q --upgrade boto3
       - pip install -q aws-sam-cli
       -
       - cd test
